@@ -1,0 +1,264 @@
+---
+title: "Visualização de dados - Curso-R"
+subtitle: "Trabalho final"
+author:
+  - name: João Gabriel Leal
+    orcid: 0000-0003-4851-1435
+    email: jgabrielrpl@gmail.com
+    affiliations:
+      - name: ENSP - Fiocruz
+lang: pt
+date: "`r format(Sys.Date())`" # Data do relatório
+date-format: short # Formato de data curto: dd/MM/yyyy 
+toc: true
+toc-location: left
+format: 
+  html:
+      self-contained: true
+      css: ["custom.css"] # Customização com css
+      code-fold: true # code-fold: true para "ocultar" o bloco de códigos
+      code-tools: true  #code-tools: true para ativar ferramentas de interação com os códigos
+  #    number-sections: true # Número de seções/subseções
+      fig-height: 23
+      fig-width: 30
+      theme: 
+        light: cosmo
+        dark: superhero # Sugestão: superhero/vapor Mudar o tema do relatório aqui
+title-block-banner: "#fefae0"
+code-annotations: hover # Para anotações em códigos
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+
+#| echo: false
+
+# 1. Abrir pacotes
+
+pacman::p_load(tidyverse, readr, readxl,patchwork, textclean)
+
+# 2. Abrir bancos
+
+## Polio (Pol3) immunization coverage among 1-year-olds (%)
+polio <- read_csv("~/treinamento_rstudio/curso_r_visualizacao_grafico_2023/trabalho_final/2811fc24-c3ac-4c51-816c-24b678c51764.csv")
+
+## BCG immunization coverage among 1-year-olds (%)
+bcg <- read_csv("~/treinamento_rstudio/curso_r_visualizacao_grafico_2023/trabalho_final/858dc50d-65e9-4d97-8ea6-268b46d4a8ab.csv")
+
+## Banco tubeculose (data-sus)
+turbe_casos <- read.csv("~/treinamento_rstudio/curso_r_visualizacao_grafico_2023/trabalho_final/A104430189_28_143_208_certo.csv", sep=";")
+
+## Banco cobertura Bcg (WHO)
+bcg <- read_csv("~/treinamento_rstudio/curso_r_visualizacao_grafico_2023/trabalho_final/858dc50d-65e9-4d97-8ea6-268b46d4a8ab.csv")
+
+
+# 3. Definir o tema dos gráficos
+
+tema <- ggthemes::theme_fivethirtyeight(base_family = "Times New Roman") +
+  theme(plot.title = element_text(size = 40, margin = margin(0, 0, 30, 0)),
+        axis.title.x = element_text(size = 45),
+        axis.title.y = element_text(size = 38),
+        axis.text.x =  element_text(size = 35),
+        axis.text.y =  element_text(size = 38),
+        legend.position = "bottom",
+        legend.text = element_text(size = 38),
+        plot.caption = element_text(hjust = 0, size = 38),
+        panel.background = element_rect(fill = "white", colour = "white", color = "white"),
+        plot.background = element_rect(fill = "white", colour = "white", color = "white"),
+        legend.background = element_rect(fill = "white"),
+        panel.grid.major.x = element_line(colour = "#f2f2f2", size = 1.5),
+        panel.grid.major.y = element_line(colour = "#f2f2f2", size = 1.5),
+        legend.box = "horizontal",
+        legend.key = element_rect(fill = "white", color = "white"))
+
+ggplot2::theme_set(tema)
+
+
+```
+
+# Introdução
+
+Os líderes políticos de extrema direita chegam ao poder e manipulam a máquina estatal de acordo com o seu discurso. Jair Bolsonaro, político alinhado a esta pauta, foi porta-voz de falas contrárias à adesão da vacina de covid 19 desde do primeiro ano da pandemia.
+
+Publicamente, o antigo líder expressava seu desdém pela ciência, criticava a segurança e a eficácia das vacinas, zombava e até associava as vacinas à propagação de doenças. As afirmações falsas de Bolsonaro podem ter influenciado no aumento da hesitação vacinal da população, não somente em relação à vacina da covid. As preocupações se expandem também para as vacinas previstas no calendário obrigatório de saúde, que previnem doenças como a poliomielite ou a tuberculose, que historicamente tinham um nível de adesão extremamente alto no país. Neste contexto, o governo cortou o orçamento para inúmeras áreas do SUS, inclusive para as vacinas, além de ter diminuído as verbas para publicidade das vacinas da gripe. O que pode parecer um governo mal estruturado e avesso a medidas orientadas pelos órgãos de saúde internacionais é, na verdade, uma manifestação concreta de um ideal de Estado e um meio de desfazer feitos de governos anteriores.
+
+Segundo os dados do Observa Infância, que reúne pesquisadores da Fundação Oswaldo Cruz (Fiocruz) e do Centro Universitário Arthur de Sá Earp Neto (Unifase), o Brasil registrou nos últimos anos uma enorme queda da coberturas da vacina BCG em bebês de 0 a 1 ano, vacina responsável pela proteção do organismo contra a tuberculose. Em meio a esta problematização, eu pretendo analisar no gráfico a seguir se essa diminuição está, de alguma forma, relacionada com o aumento de casos de tuberculose em crianças no país. Elaborei um gráfico que mostra, nos últimos vinte um anos, a cobertura da vacina BCG em bebês de até 1 ano, e a indicação se os casos de tuberculose em crianças diminuíram ou aumentaram de um ano para o outro. Os dados sobre os casos de tuberculose foram retirados do Sistema de Informação de Agravos de Notificação (Sinan), enquanto de cobertura BCG dos acervos da organização mundial da saúde.
+
+# Análise
+
+Pode-se notar que, infelizmente, há em curso no país um processo de diminuição da cobertura vacinal de BCG, nossos bebês que possuíam um percentual de cobertura acima de 90% no passado, agora possuem uma abertura abaixo dos 70%.
+
+Quando olhamos para a variação percentual, que indica os anos em que ocorreu aumento ou diminuição de casos de tuberculose em crianças no país em comparação ao ano anterior, notamos que boa parte dos anos que aconteceu aumento de casos foi simultaneamente à queda de cobertura. Os anos que aparecem os valores acima da linha são aqueles que ocorreram aumento de casos. Além disso, os casos aumentaram justamente no período no qual o líder máximo da população se portava como um ator desestimulador de imunizações.
+
+```{r}
+
+# cria banco turbe_casos
+
+turbe_casos <- turbe_casos[-23, ] # apagar linha vazia 
+
+turbe_casos <- turbe_casos %>% 
+  mutate(casos_tube_0_9_anos = X.1.Ano+X1.4.anos+X5.9.anos) %>% # agreguei os casos de 0 aos 9 anos 
+  filter(Ano != 2022) %>% # tirei o ano de 2022
+  select(Ano,casos_tube_0_9_anos) # selecionei as variaveis de interesse
+
+turbe_casos_vari <- turbe_casos %>% 
+  pivot_wider(names_from = Ano, values_from = casos_tube_0_9_anos) %>% # por em wide
+  mutate(vari_01_02 = (round((`2002`-`2001`)/`2001` * 100,2)), # calcular variavel
+         vari_02_03 = (round((`2003`-`2002`)/`2002` * 100,2)),
+         vari_03_04 = (round((`2004`-`2003`)/`2003` * 100,2)),
+         vari_04_05 = (round((`2005`-`2004`)/`2004` * 100,2)),
+         vari_05_06 = (round((`2006`-`2005`)/`2005` * 100,2)),
+         vari_06_07 = (round((`2007`-`2006`)/`2006` * 100,2)),
+         vari_07_08 = (round((`2008`-`2007`)/`2007` * 100,2)),
+         vari_08_09 = (round((`2009`-`2008`)/`2008` * 100,2)),
+         vari_09_10 = (round((`2010`-`2009`)/`2009` * 100,2)),
+         vari_10_11 = (round((`2011`-`2010`)/`2010` * 100,2)),
+         vari_11_12 = (round((`2012`-`2011`)/`2011` * 100,2)),
+         vari_12_13 = (round((`2013`-`2012`)/`2012` * 100,2)),
+         vari_13_14 = (round((`2014`-`2013`)/`2013` * 100,2)),
+         vari_14_15 = (round((`2015`-`2014`)/`2014` * 100,2)),
+         vari_15_16 = (round((`2016`-`2015`)/`2015` * 100,2)),
+         vari_16_17 = (round((`2017`-`2016`)/`2016` * 100,2)),
+         vari_17_18 = (round((`2018`-`2017`)/`2017` * 100,2)),
+         vari_18_19 = (round((`2019`-`2018`)/`2018` * 100,2)),
+         vari_19_20 = (round((`2020`-`2019`)/`2019` * 100,2)),
+         vari_20_21 = (round((`2021`-`2020`)/`2020` * 100,2))) %>% 
+  select(vari_01_02, vari_02_03, vari_03_04, vari_04_05, vari_05_06, vari_06_07, # selecionar vari calculadas
+         vari_07_08, vari_08_09, vari_09_10, vari_10_11, vari_11_12, vari_12_13,
+         vari_13_14, vari_14_15, vari_15_16, vari_16_17, vari_17_18, vari_18_19,
+         vari_19_20, vari_20_21) %>% 
+  rename(`2002` = vari_01_02, `2003` = vari_02_03, `2004` = vari_03_04, # renomear variacao
+         `2005` = vari_04_05, `2006` = vari_05_06, `2007` = vari_06_07,
+         `2008` = vari_07_08, `2009` = vari_08_09, `2010` = vari_09_10,
+         `2011` = vari_10_11, `2012` = vari_11_12, `2013` = vari_12_13,
+         `2014` = vari_13_14, `2015` = vari_14_15, `2016` = vari_15_16,
+         `2017` = vari_16_17, `2018` = vari_17_18, `2019` = vari_18_19,
+         `2020` = vari_19_20, `2021` = vari_20_21) %>% 
+  mutate(long="long") %>% # variavel necessaria para por em long
+  pivot_longer(!long, names_to = "ano", # tranformar em long
+               values_to = "vari_casos_tube_0_9_anos") %>% 
+  mutate(long= NULL, # apagar variavel necessaria para por em long
+         ano = as.numeric(ano))  
+
+bcg_paises <- bcg   %>% 
+  select( Period, Indicator,
+          #ParentLocation,
+          Location,
+          Value
+  ) %>%
+  filter (Indicator == "BCG immunization coverage among 1-year-olds (%)",
+          Location %in% c (
+            "Brazil",
+            "China",
+            "Russian Federation",
+            "India",
+            "South Africa"),
+          Period %in% c (2000:2021)) %>% 
+  rename(Value = Value)
+
+bcg_brics <- bcg  %>% 
+  mutate(Value = as.numeric(Value),
+         Location = "Brics",
+         Indicator = "BCG immunization coverage among 1-year-olds (%)") %>%
+  group_by(Location, Period, Indicator) %>% 
+  summarise(Value= round(mean(Value),2)) 
+
+bcg_parents <- bcg  %>% select( 
+  Period,
+  Indicator,
+  ParentLocation,
+  Location,
+  Value
+) %>%
+  filter (!Location  %in% c("Canada", "United States of America"),
+          Indicator %in% c ("BCG immunization coverage among 1-year-olds (%)")) %>% 
+  filter (Period %in% c (2000:2021)) %>% 
+  group_by(ParentLocation, Period ) %>% 
+  mutate(Value = as.numeric(Value)) %>% 
+  summarise(Value= round(mean(Value),2)) %>% 
+  rename(Location = ParentLocation) %>% 
+  mutate (#Period = "2020",
+    Indicator = "BCG immunization coverage among 1-year-olds (%)")
+
+bcg_completo <- rbind( bcg_paises, bcg_brics, bcg_parents)
+
+bcg_brasil <- bcg_completo %>% 
+  filter(Location == "Brazil")
+
+# juntar os bancos
+bcg_casos_brasil  <- left_join(bcg_brasil, turbe_casos, 
+                               by= c("Period" =  "Ano"))
+
+bcg_casos_brasil  <- left_join(bcg_casos_brasil, turbe_casos_vari, 
+                               by= c("Period" =  "ano"))
+
+
+
+## cria ao banco
+
+vari_casos_tube <- bcg_casos_brasil %>% 
+  select(Period, vari_casos_tube_0_9_anos) %>% 
+  rename(Value = vari_casos_tube_0_9_anos) %>% 
+  mutate(Indicator = "Variação % casos de turbeculose em crianças de até 9 anos") 
+
+bcg_cober_brasil <- bcg_casos_brasil %>% 
+  select(Period, Indicator, Value ) 
+
+(bcg_turb <- rbind(vari_casos_tube, bcg_cober_brasil) %>% # juntar bancos
+    mutate(Period = as.character(Period), # tranformar em caracter
+           Indicator = mgsub(
+             Indicator, c(
+               "BCG immunization coverage among 1-year-olds (%)", # mudar noma variavel
+               "Variação % casos de turbeculose em crianças de até 9 anos"),
+             c(
+               "Cobertura BCG entre crianças de 1 ano",
+               "Variação % casos de turbeculose em crianças de até 9 anos")),
+           efeitos_positivos = ifelse(  # fazer nova variavel
+             Value > 0.5 &
+               Indicator == "Variação % casos de turbeculose em crianças de até 9 anos",
+             Value, NA)) %>% 
+    
+    # Inicio do codigo para plotar o grafico
+    
+    ggplot(aes(x = Period,
+               y = (Value), 
+               group = Indicator, 
+               color = Indicator))+ 
+    ggalt::geom_xspline(aes(size = 16), alpha = .7, 
+      show.legend = FALSE)+ # grafico de linha curvada
+    # geom_line(size = 1.5,
+    #           linetype=1)+
+    geom_point(size = 16, alpha = .5)+
+    scale_y_continuous(labels = function(x) paste0(x, "%"),
+                       limits = c(-40,100),
+                       breaks = c(-40, -20, 0, 20, 40, 60, 80, 100))+
+    scale_color_manual(values = c(
+      "#154360",
+      "steelblue1"
+    ))+
+    labs(x = NULL,
+         y = NULL, 
+         col = NULL,
+         linetype = NULL,
+         title = "Gráfico 1:\nCobertura da vacina BCG e a variação percentual de casos de tuberculose em crianças no Brasil (2000-2021)",
+         caption ="Fonte: Organização Mundial da Sáude e Sinan.\nNota: A variação percentual ilustra os anos em que ocorreu aumento ou diminuição de casos de tuberculose em crianças no país em\ncomparação ao ano anterior. São considerados como crianças, neste gráfico, os indivíduos com idade até 9 anos. Eu adotei esse\nprocesso porque as crianças com até 9 anos nasceram dentro do período em que a cobertura vacinal começou a cair no país.") +
+    ggthemes::theme_fivethirtyeight()+
+    tema+
+    geom_hline(yintercept = 0,color="grey50",linetype=2, size = 3)+
+    geom_label(
+      aes(y = round(efeitos_positivos,1),
+          label = round(efeitos_positivos,1)),  # forma de por o rotulo (label) para modificar com facilidade
+      vjust = -0.5,
+      size= 16,
+      show.legend = FALSE)) 
+
+
+```
+
+# Conclusões
+
+O comportamento de atores políticos influencia o modo de pensar e as decisões tomadas por uma fatia importante da sociedade. As ações de um líder político democraticamente eleito e os seus valores morais expressos em discursos podem decidir se um feito público, ou mesmo uma política pública, vingará ou estará fadado ao fracasso. As falas de Bolsonaro podem ter trazido implicações para sociedade do ponto de vista da cobertura vacinal. Embora não se possa afirmar que exista uma relação de causalidade, o gráfico indica que as crianças brasileiras estavam mais expostas à tuberculose no fim do governo Bolsonaro quando comparada ao começo do governo dele.
+
+Especialistas em pediatria, infectologia, epidemiologia e saúde coletiva expressam preocupação com a possibilidade de ocorrer novas crises sanitárias no país devido à queda na vacinação. Doenças que eram comuns no passado podem ressurgir, o que é alarmante. Diante desse cenário, é importante que organizações da sociedade civil acompanhem de perto essa situação.
